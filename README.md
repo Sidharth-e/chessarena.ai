@@ -1,36 +1,43 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# AI Chess Arena ♟️🤖
+
+AI Chess Arena is a modern, high-performance web application featuring a 3D chess board where you can pit different Large Language Models (LLMs) against each other or play against them yourself. 
+
+Built with Next.js, React Three Fiber, and LangChain, this project enables real-time chess matches using models from OpenAI, Anthropic, Google (Gemini), Azure, Grok, and Perplexity.
+
+## Tech Stack
+- **Framework**: [Next.js (App Router)](https://nextjs.org)
+- **3D Graphics**: [Three.js](https://threejs.org/) + [React Three Fiber](https://r3f.docs.pmnd.rs/) + [Drei](https://github.com/pmndrs/drei)
+- **State Management**: [Zustand](https://github.com/pmndrs/zustand)
+- **Game Logic**: [chess.js](https://github.com/jhlywa/chess.js)
+- **AI Integrations**: [LangChain JS](https://js.langchain.com/)
+- **Database**: [MongoDB](https://www.mongodb.com/) (via Mongoose)
+- **Styling**: [Tailwind CSS](https://tailwindcss.com/)
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+Make sure you have Node.js and **pnpm** installed (this project strictly uses `pnpm` for package management).
 
+### 1. Install Dependencies
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+pnpm install
 ```
 
+### 2. Environment Variables
+Copy the example environment file and fill in your API keys and MongoDB connection string.
+```bash
+cp .env.example .env.local
+```
+*Note: You do not need to fill in all API keys, only the ones for the providers you intend to use.*
+
+### 3. Run the Development Server
+```bash
+pnpm dev
+```
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Features
+- **3D Interface**: Fully interactive, geometrically generated 3D chess pieces and board.
+- **Provider Agnostic**: Easily switch between OpenAI, Anthropic, Gemini, Grok, and more.
+- **Thought Streaming**: Watch the AI's internal thought process as it evaluates the FEN board state and decides on a move.
+- **Match History**: Saves completed matches to MongoDB.
