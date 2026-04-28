@@ -10,7 +10,7 @@ const PROVIDERS = ["Human", "OpenAI", "Anthropic", "Gemini", "Azure", "Grok", "P
 const MODELS: Record<string, string[]> = {
   "OpenAI": ["gpt-4-turbo", "gpt-4o", "gpt-3.5-turbo"],
   "Anthropic": ["claude-3-opus-20240229", "claude-3-sonnet-20240229", "claude-3-haiku-20240307"],
-  "Gemini": ["gemini-1.5-pro", "gemini-1.5-flash"],
+  "Gemini": ["gemini-3.1-pro-preview", "gemini-3-flash-preview"],
   "Azure": ["gpt-4", "gpt-35-turbo"],
   "Grok": ["grok-1", "grok-1.5"],
   "Perplexity": ["llama-3-sonar-large-32k-chat", "llama-3-sonar-small-32k-chat"]
@@ -18,12 +18,12 @@ const MODELS: Record<string, string[]> = {
 
 export default function Home() {
   const { fen, pgn, turn, isGameOver, winner, makeMove, resetGame } = useGameStore();
-  
+
   const [whiteProvider, setWhiteProvider] = useState("Human");
   const [whiteModel, setWhiteModel] = useState("");
   const [blackProvider, setBlackProvider] = useState("OpenAI");
   const [blackModel, setBlackModel] = useState("gpt-4o");
-  
+
   const [isThinking, setIsThinking] = useState(false);
   const [lastThoughtProcess, setLastThoughtProcess] = useState("");
 
@@ -43,7 +43,7 @@ export default function Home() {
   // AI Game Loop
   useEffect(() => {
     if (isGameOver) return;
-    
+
     const isWhiteTurn = turn === "w";
     const currentProvider = isWhiteTurn ? whiteProvider : blackProvider;
     const currentModel = isWhiteTurn ? whiteModel : blackModel;
@@ -86,7 +86,7 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-slate-900 p-8">
       <div className="max-w-7xl mx-auto space-y-8">
-        
+
         {/* Header */}
         <div className="text-center space-y-4">
           <div className="inline-flex items-center justify-center p-3 bg-primary/10 rounded-full mb-4">
@@ -96,13 +96,13 @@ export default function Home() {
             AI Chess Arena
           </h1>
           <p className="text-slate-400 text-lg max-w-2xl mx-auto">
-            Watch the world's most powerful LLMs battle it out on a 3D chess board. 
+            Watch the world's most powerful LLMs battle it out on a 3D chess board.
             Select your fighters and let the game begin.
           </p>
         </div>
 
         <div className="grid lg:grid-cols-3 gap-8">
-          
+
           {/* Left Column: Player Configs */}
           <div className="space-y-6">
             <div className="card space-y-4">
@@ -110,10 +110,10 @@ export default function Home() {
                 <div className="w-4 h-4 rounded-full bg-white shadow-[0_0_10px_rgba(255,255,255,0.8)]" />
                 White Player
               </h2>
-              
+
               <div>
                 <label className="label-text">Provider</label>
-                <select 
+                <select
                   className="input-field"
                   value={whiteProvider}
                   onChange={(e) => setWhiteProvider(e.target.value)}
@@ -125,7 +125,7 @@ export default function Home() {
               {whiteProvider !== "Human" && (
                 <div>
                   <label className="label-text">Model</label>
-                  <select 
+                  <select
                     className="input-field"
                     value={whiteModel}
                     onChange={(e) => setWhiteModel(e.target.value)}
@@ -141,10 +141,10 @@ export default function Home() {
                 <div className="w-4 h-4 rounded-full bg-slate-800 dark:bg-slate-900 border border-slate-600 shadow-[0_0_10px_rgba(0,0,0,0.8)]" />
                 Black Player
               </h2>
-              
+
               <div>
                 <label className="label-text">Provider</label>
-                <select 
+                <select
                   className="input-field"
                   value={blackProvider}
                   onChange={(e) => setBlackProvider(e.target.value)}
@@ -156,7 +156,7 @@ export default function Home() {
               {blackProvider !== "Human" && (
                 <div>
                   <label className="label-text">Model</label>
-                  <select 
+                  <select
                     className="input-field"
                     value={blackModel}
                     onChange={(e) => setBlackModel(e.target.value)}
@@ -172,7 +172,7 @@ export default function Home() {
                 <Activity className="w-5 h-5 text-info" />
                 Match Status
               </h3>
-              
+
               {isGameOver ? (
                 <div className="p-4 bg-success/20 border border-success/30 rounded-lg flex flex-col items-center justify-center text-center space-y-2">
                   <Trophy className="w-8 h-8 text-success" />
