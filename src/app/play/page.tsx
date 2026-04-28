@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from "react";
 import ChessBoard3D from "@/components/chess/ChessBoard3D";
+import { ThoughtHistory } from "@/components/chess/ThoughtHistory";
 import { useGameStore } from "@/store/useGameStore";
-import { BrainCircuit, RotateCcw, Trophy, Activity, ArrowLeft, RefreshCw, AlertCircle } from "lucide-react";
+import { RotateCcw, Trophy, Activity, ArrowLeft, RefreshCw, AlertCircle } from "lucide-react";
 import { MatchSetup } from "@/components/chess/MatchSetup";
 import { Button } from "@/components/ui/Button";
 import Link from "next/link";
@@ -25,6 +26,13 @@ export default function PlayPage() {
   } = useGameStore();
 
   const [lastThoughtProcess, setLastThoughtProcess] = useState("");
+  const [thoughtHistory, setThoughtHistory] = useState<Array<{
+    moveNumber: number;
+    color: string;
+    san: string;
+    thought: string;
+    timestamp: string;
+  }>>([]);
 
   const aiMoveMutation = useMutation({
     mutationFn: async (config: { fen: string; pgn: string; provider: string; model: string; color: string }) => {
@@ -42,6 +50,15 @@ export default function PlayPage() {
             data.move, 
             data.thoughtProcess
           );
+
+          // Add to thought history
+          setThoughtHistory(prev => [...prev, {
+            moveNumber: Math.floor(pgn.split(" ").filter(Boolean).length / 2) + 1,
+            color: turn === 'w' ? "White" : "Black",
+            san: data.move,
+            thought: data.thoughtProcess || "",
+            timestamp: new Date().toISOString()
+          }]);
         }
         setLastThoughtProcess(data.thoughtProcess || `Played ${data.move}`);
       } else if (data.error) {
@@ -106,6 +123,25 @@ export default function PlayPage() {
       finalizeMatch(matchId, result);
     }
   }, [isGameOver, winner, matchId]);
+
+  useEffect(() => {
+    if (matchId) {
+      import("@/app/actions/match").then(({ getMatch }) => {
+        getMatch(matchId).then((result) => {
+          if (result.success && result.match) {
+            const history = (result.match.moves as Array<{ san: string; thoughtProcess?: string; timestamp: string }>).map((m, index: number) => ({
+              moveNumber: Math.floor(index / 2) + 1,
+              color: index % 2 === 0 ? "White" : "Black",
+              san: m.san,
+              thought: m.thoughtProcess || "",
+              timestamp: m.timestamp
+            })).filter((h) => h.thought);
+            setThoughtHistory(history);
+          }
+        });
+      });
+    }
+  }, [matchId]);
 
   if (!matchId) {
     return (
@@ -220,16 +256,11 @@ export default function PlayPage() {
               </Button>
             </div>
 
-            {/* AI Thought Process Console */}
-            <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 space-y-2">
-              <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-widest flex items-center gap-2">
-                <BrainCircuit className="w-4 h-4 text-blue-500" />
-                Cognition Stream
-              </h3>
-              <div className="h-48 overflow-y-auto font-mono text-xs text-slate-400 bg-slate-900/50 p-3 rounded border border-slate-800/50 whitespace-pre-wrap leading-relaxed">
-                {lastThoughtProcess || "Waiting for initial move..."}
-              </div>
-            </div>
+            <ThoughtHistory 
+              history={thoughtHistory}
+              isThinking={aiMoveMutation.isPending}
+              currentThinkingMessage={lastThoughtProcess}
+            />
           </div>
 
           {/* Center Column: 3D Board */}
