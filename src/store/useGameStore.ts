@@ -19,7 +19,7 @@ interface GameState {
   currentGameConfig: { white: PlayerConfig; black: PlayerConfig };
   
   // Actions
-  initGame: (matchId: string, whiteProvider: string, blackProvider: string) => void;
+  initGame: (matchId: string, whiteConfig: PlayerConfig, blackConfig: PlayerConfig) => void;
   makeMove: (move: string | { from: string; to: string; promotion?: string }) => Move | null;
   setSelectedSquare: (square: string | null) => void;
   resetGame: () => void;
@@ -44,7 +44,7 @@ export const useGameStore = create<GameState>()(
       globalSettings: DEFAULT_CONFIG,
       currentGameConfig: DEFAULT_CONFIG,
 
-      initGame: (matchId, whiteProvider, blackProvider) => {
+      initGame: (matchId, whiteConfig, blackConfig) => {
         const newChess = new Chess();
         set({
           chess: newChess,
@@ -54,12 +54,12 @@ export const useGameStore = create<GameState>()(
           isGameOver: false,
           winner: null,
           matchId,
-          whiteProvider,
-          blackProvider,
+          whiteProvider: whiteConfig.provider,
+          blackProvider: blackConfig.provider,
           selectedSquare: null,
           currentGameConfig: {
-            white: { provider: whiteProvider, model: '' },
-            black: { provider: blackProvider, model: '' }
+            white: whiteConfig,
+            black: blackConfig
           }
         });
       },
