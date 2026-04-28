@@ -7,6 +7,7 @@ export async function getRecentMatches(limit: number = 10) {
   try {
     await connectToDatabase();
     const matches = await Match.find()
+      .select("-moves") // Exclude moves for the list view to avoid serialization issues and improve performance
       .sort({ createdAt: -1 })
       .limit(limit)
       .lean();
@@ -16,8 +17,8 @@ export async function getRecentMatches(limit: number = 10) {
       matches: matches.map(m => ({
         ...m,
         _id: m._id.toString(),
-        createdAt: (m.createdAt as Date)?.toISOString(),
-        updatedAt: (m.updatedAt as Date)?.toISOString(),
+        createdAt: m.createdAt instanceof Date ? m.createdAt.toISOString() : m.createdAt,
+        updatedAt: m.updatedAt instanceof Date ? m.updatedAt.toISOString() : m.updatedAt,
       }))
     };
   } catch (error: unknown) {
@@ -52,22 +53,25 @@ export async function getMatch(matchId: string) {
     const match = await Match.findById(matchId).lean();
     if (!match) return { success: false, error: "Match not found" };
     
-    // Convert ObjectId to string for client component consumption
+    // Convert ObjectId and Dates to plain strings for client component consumption
     return { 
       success: true, 
       match: {
         ...match,
         _id: match._id.toString(),
-        createdAt: match.createdAt?.toISOString(),
-        updatedAt: match.updatedAt?.toISOString(),
-        moves: match.moves.map(m => {
-          const move = m as { san: string; fen: string; timestamp: Date; thoughtProcess?: string; _id?: { toString: () => string } };
-          return {
-            ...move,
-            _id: move._id?.toString(),
-            timestamp: move.timestamp?.toISOString()
-          };
-        })
+        createdAt: match.createdAt instanceof Date ? match.createdAt.toISOString() : match.createdAt,
+        updatedAt: match.updatedAt instanceof Date ? match.updatedAt.toISOString() : match.updatedAt,
+        moves: (match.moves || []).map((m: { 
+          san: string; 
+          fen: string; 
+          timestamp: Date | string; 
+          thoughtProcess?: string; 
+          _id?: { toString: () => string } 
+        }) => ({
+          ...m,
+          _id: m._id?.toString(),
+          timestamp: m.timestamp instanceof Date ? m.timestamp.toISOString() : m.timestamp
+        }))
       }
     };
   } catch (error: unknown) {

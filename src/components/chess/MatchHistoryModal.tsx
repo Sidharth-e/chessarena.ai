@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { getRecentMatches, getMatch } from '@/app/actions/match';
 import { Button } from '@/components/ui/Button';
-import { X, History, ChevronRight, PlayCircle } from 'lucide-react';
+import { X, History, PlayCircle } from 'lucide-react';
 import { useGameStore } from '@/store/useGameStore';
 
 interface MatchHistoryModalProps {
@@ -11,21 +11,47 @@ interface MatchHistoryModalProps {
   onClose: () => void;
 }
 
+interface Match {
+  _id: string;
+  whiteProvider: string;
+  blackProvider: string;
+  whiteModel: string;
+  blackModel: string;
+  result: string;
+  createdAt: string;
+  fen: string;
+  pgn: string;
+}
+
 export const MatchHistoryModal: React.FC<MatchHistoryModalProps> = ({ isOpen, onClose }) => {
-  const [matches, setMatches] = useState<any[]>([]);
+  const [matches, setMatches] = useState<Match[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const { initGame } = useGameStore();
 
   useEffect(() => {
+    let isMounted = true;
+    
     if (isOpen) {
-      setIsLoading(true);
-      getRecentMatches(20).then(result => {
-        if (result.success) {
-          setMatches(result.matches || []);
+      const fetchMatches = async () => {
+        setIsLoading(true);
+        try {
+          const result = await getRecentMatches(20);
+          if (isMounted && result.success) {
+            setMatches((result.matches as Match[]) || []);
+          }
+        } catch (error) {
+          console.error("Failed to fetch matches:", error);
+        } finally {
+          if (isMounted) setIsLoading(false);
         }
-        setIsLoading(false);
-      });
+      };
+      
+      fetchMatches();
     }
+
+    return () => {
+      isMounted = false;
+    };
   }, [isOpen]);
 
   const handleContinueMatch = async (matchId: string) => {

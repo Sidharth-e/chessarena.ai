@@ -79,8 +79,9 @@ export default function PlayPage() {
       if (err.response?.status === 429 && failureCount < 3) return true;
       return false;
     },
-    retryDelay: (attemptIndex, error: any) => {
-      const retryAfter = error.response?.data?.retryAfter;
+    retryDelay: (attemptIndex, error: unknown) => {
+      const err = error as { response?: { data?: { retryAfter?: string } } };
+      const retryAfter = err.response?.data?.retryAfter;
       if (retryAfter) {
         const seconds = parseFloat(retryAfter.replace('s', ''));
         if (!isNaN(seconds)) return (seconds + 1) * 1000;

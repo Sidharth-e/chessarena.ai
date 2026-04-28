@@ -117,18 +117,25 @@ Then, on the final line of your response, output ONLY the chosen move in SAN for
       thoughtProcess: content 
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("LLM Move Error:", error);
     
+    const err = error as { 
+      status?: number; 
+      response?: { status?: number }; 
+      message?: string;
+      errorDetails?: Array<{ '@type'?: string; retryDelay?: string }>;
+    };
+
     // Handle rate limiting specifically
-    if (error?.status === 429 || error?.response?.status === 429 || error?.message?.includes("429")) {
+    if (err.status === 429 || err.response?.status === 429 || err.message?.includes("429")) {
       let retryAfter = null;
       let specificMessage = "Rate limit exceeded. Please wait a moment before trying again.";
 
       // Try to extract specific retry delay from Google Generative AI error
-      if (error?.errorDetails) {
-        const quotaFailure = error.errorDetails.find((d: any) => d['@type']?.includes('QuotaFailure'));
-        const retryInfo = error.errorDetails.find((d: any) => d['@type']?.includes('RetryInfo'));
+      if (err.errorDetails) {
+        const quotaFailure = err.errorDetails.find((d) => d['@type']?.includes('QuotaFailure'));
+        const retryInfo = err.errorDetails.find((d) => d['@type']?.includes('RetryInfo'));
         
         if (retryInfo?.retryDelay) {
           // Format like "29s" or "29.332s"
