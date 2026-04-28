@@ -118,6 +118,19 @@ Then, on the final line of your response, output ONLY the chosen move in SAN for
 
   } catch (error: unknown) {
     console.error("LLM Move Error:", error);
+    
+    // Handle rate limiting specifically
+    const err = error as { status?: number; response?: { status?: number }; message?: string };
+    if (err?.status === 429 || err?.response?.status === 429 || err?.message?.includes("429")) {
+      return NextResponse.json(
+        { 
+          error: "Rate limit exceeded. Please wait a moment before trying again.",
+          details: err.message
+        },
+        { status: 429 }
+      );
+    }
+
     const message = error instanceof Error ? error.message : "Failed to generate move";
     return NextResponse.json(
       { error: message },

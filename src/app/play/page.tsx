@@ -3,12 +3,13 @@
 import { useState, useEffect } from "react";
 import ChessBoard3D from "@/components/chess/ChessBoard3D";
 import { useGameStore } from "@/store/useGameStore";
-import { BrainCircuit, RotateCcw, Trophy, Activity, ArrowLeft } from "lucide-react";
+import { BrainCircuit, RotateCcw, Trophy, Activity, ArrowLeft, RefreshCw, AlertCircle } from "lucide-react";
 import { MatchSetup } from "@/components/chess/MatchSetup";
 import { Button } from "@/components/ui/Button";
 import Link from "next/link";
 import axios from "axios";
 import { updateMatchMove, finalizeMatch } from "@/app/actions/match";
+import { useMutation } from "@tanstack/react-query";
 
 export default function PlayPage() {
   const { 
@@ -23,8 +24,43 @@ export default function PlayPage() {
     resetGame 
   } = useGameStore();
 
-  const [isThinking, setIsThinking] = useState(false);
   const [lastThoughtProcess, setLastThoughtProcess] = useState("");
+
+  const aiMoveMutation = useMutation({
+    mutationFn: async (config: { fen: string; pgn: string; provider: string; model: string; color: string }) => {
+      const res = await axios.post("/api/llm-move", config);
+      return res.data;
+    },
+    onSuccess: (data) => {
+      if (data.move) {
+        const moveResult = makeMove(data.move);
+        if (moveResult && matchId) {
+          updateMatchMove(
+            matchId, 
+            moveResult.after, 
+            pgn + " " + data.move, 
+            data.move, 
+            data.thoughtProcess
+          );
+        }
+        setLastThoughtProcess(data.thoughtProcess || `Played ${data.move}`);
+      } else if (data.error) {
+        setLastThoughtProcess(`Error: ${data.error}`);
+      }
+    },
+    onError: (error: unknown) => {
+      console.error(error);
+      const err = error as { response?: { data?: { error?: string } }; message?: string };
+      const message = err.response?.data?.error || err.message || "Unknown error";
+      setLastThoughtProcess(`Error fetching move: ${message}`);
+    },
+    retry: (failureCount, error: unknown) => {
+      const err = error as { response?: { status?: number } };
+      if (err.response?.status === 429 && failureCount < 2) return true;
+      return false;
+    },
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000),
+  });
 
   // AI Game Loop
   useEffect(() => {
@@ -33,49 +69,35 @@ export default function PlayPage() {
     const isWhiteTurn = turn === "w";
     const currentConfig = isWhiteTurn ? currentGameConfig.white : currentGameConfig.black;
 
-    if (currentConfig.provider !== "Human" && !isThinking) {
-      const fetchAIMove = async () => {
-        setIsThinking(true);
-        setLastThoughtProcess(`Waiting for ${currentConfig.provider} to think...`);
-        try {
-          const res = await axios.post("/api/llm-move", {
-            fen,
-            pgn,
-            provider: currentConfig.provider,
-            model: currentConfig.model,
-            color: isWhiteTurn ? "white" : "black"
-          });
-
-          if (res.data.move) {
-            const moveResult = makeMove(res.data.move);
-            if (moveResult && matchId) {
-              await updateMatchMove(
-                matchId, 
-                moveResult.after, // Use FEN after move
-                pgn + " " + res.data.move, 
-                res.data.move, 
-                res.data.thoughtProcess
-              );
-            }
-            setLastThoughtProcess(res.data.thoughtProcess || `Played ${res.data.move}`);
-          } else if (res.data.error) {
-            setLastThoughtProcess(`Error: ${res.data.error}`);
-          }
-        } catch (error: unknown) {
-          console.error(error);
-          const message = error instanceof Error ? error.message : "Unknown error";
-          setLastThoughtProcess(`Error fetching move: ${message}`);
-        } finally {
-          setIsThinking(false);
-        }
-      };
-
+    if (currentConfig.provider !== "Human" && !aiMoveMutation.isPending && !aiMoveMutation.isError) {
       const timer = setTimeout(() => {
-        fetchAIMove();
+        aiMoveMutation.mutate({
+          fen,
+          pgn,
+          provider: currentConfig.provider,
+          model: currentConfig.model,
+          color: isWhiteTurn ? "white" : "black"
+        });
+        setLastThoughtProcess(`Waiting for ${currentConfig.provider} to think...`);
       }, 500);
       return () => clearTimeout(timer);
     }
-  }, [fen, pgn, turn, isGameOver, matchId, currentGameConfig, makeMove, isThinking]);
+  }, [fen, pgn, turn, isGameOver, matchId, currentGameConfig, makeMove, aiMoveMutation]);
+
+  // Handle manual retry
+  const handleRetry = () => {
+    const isWhiteTurn = turn === "w";
+    const currentConfig = isWhiteTurn ? currentGameConfig.white : currentGameConfig.black;
+    
+    aiMoveMutation.mutate({
+      fen,
+      pgn,
+      provider: currentConfig.provider,
+      model: currentConfig.model,
+      color: isWhiteTurn ? "white" : "black"
+    });
+    setLastThoughtProcess(`Retrying: Waiting for ${currentConfig.provider} to think...`);
+  };
 
   // Finalize Match
   useEffect(() => {
@@ -162,12 +184,32 @@ export default function PlayPage() {
                     </span>
                   </div>
                 ) : (
-                  <div className="flex items-center gap-3 p-3 bg-slate-900/50 rounded-lg border border-slate-800">
-                    <div className={`w-3 h-3 rounded-full animate-pulse ${turn === 'w' ? 'bg-white' : 'bg-slate-500'}`} />
-                    <span className="text-slate-200 font-medium">
-                      {turn === 'w' ? "White's Turn" : "Black's Turn"}
-                    </span>
-                    {isThinking && <span className="text-xs text-blue-400 ml-auto animate-pulse">Thinking...</span>}
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-3 p-3 bg-slate-900/50 rounded-lg border border-slate-800">
+                      <div className={`w-3 h-3 rounded-full animate-pulse ${turn === 'w' ? 'bg-white' : 'bg-slate-500'}`} />
+                      <span className="text-slate-200 font-medium">
+                        {turn === 'w' ? "White's Turn" : "Black's Turn"}
+                      </span>
+                      {aiMoveMutation.isPending && <span className="text-xs text-blue-400 ml-auto animate-pulse">Thinking...</span>}
+                    </div>
+                    
+                    {aiMoveMutation.isError && (
+                      <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg space-y-2">
+                        <div className="flex items-center gap-2 text-red-400 text-xs font-medium">
+                          <AlertCircle className="w-4 h-4" />
+                          <span>Move Generation Failed</span>
+                        </div>
+                        <Button 
+                          variant="secondary" 
+                          size="sm" 
+                          onClick={handleRetry}
+                          className="w-full bg-red-500/20 hover:bg-red-500/30 border-red-500/30 text-red-200 text-xs h-8"
+                        >
+                          <RefreshCw className={`w-3 h-3 mr-2 ${aiMoveMutation.isPending ? 'animate-spin' : ''}`} />
+                          Retry Move
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
