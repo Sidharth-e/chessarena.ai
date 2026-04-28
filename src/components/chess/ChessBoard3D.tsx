@@ -20,10 +20,10 @@ function getPosition(square: string): [number, number, number] {
 }
 
 function Board() {
-  const { chess, turn, selectedSquare, setSelectedSquare, makeMove } = useGameStore();
+  const { chess, fen, turn, selectedSquare, setSelectedSquare, makeMove } = useGameStore();
   const [validMoves, setValidMoves] = useState<string[]>([]);
   
-  const board = useMemo(() => chess.board(), [chess]);
+  const board = useMemo(() => chess.board(), [fen, chess]);
 
   const handleSquareClick = (square: string) => {
     if (selectedSquare) {
