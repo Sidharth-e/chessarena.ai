@@ -18,6 +18,7 @@ interface GameState {
   
   globalSettings: { white: PlayerConfig; black: PlayerConfig };
   currentGameConfig: { white: PlayerConfig; black: PlayerConfig };
+  captured: { w: string[]; b: string[] };
   
   // Actions
   initGame: (matchId: string, whiteConfig: PlayerConfig, blackConfig: PlayerConfig, initialFen?: string, initialPgn?: string) => void;
@@ -45,6 +46,7 @@ export const useGameStore = create<GameState>()(
       selectedSquare: null,
       globalSettings: DEFAULT_CONFIG,
       currentGameConfig: DEFAULT_CONFIG,
+      captured: { w: [], b: [] },
 
       initGame: (matchId, whiteConfig, blackConfig, initialFen, initialPgn) => {
         const newChess = new Chess(initialFen);
@@ -55,6 +57,34 @@ export const useGameStore = create<GameState>()(
             console.error("Failed to load PGN:", e);
           }
         }
+
+        // Calculate captured pieces from board state
+        const currentPieces: Record<'w' | 'b', Record<string, number>> = {
+          w: { p: 0, n: 0, b: 0, r: 0, q: 0, k: 0 },
+          b: { p: 0, n: 0, b: 0, r: 0, q: 0, k: 0 }
+        };
+
+        newChess.board().forEach(row => {
+          row.forEach(piece => {
+            if (piece) {
+              currentPieces[piece.color][piece.type]++;
+            }
+          });
+        });
+
+        const STARTING_PIECES = { p: 8, n: 2, b: 2, r: 2, q: 1, k: 1 };
+        const newCaptured = { w: [] as string[], b: [] as string[] };
+
+        Object.entries(STARTING_PIECES).forEach(([type, count]) => {
+          // Missing Black pieces were captured by White
+          for (let i = 0; i < count - currentPieces.b[type]; i++) {
+            newCaptured.w.push(type);
+          }
+          // Missing White pieces were captured by Black
+          for (let i = 0; i < count - currentPieces.w[type]; i++) {
+            newCaptured.b.push(type);
+          }
+        });
 
         set({
           chess: newChess,
@@ -70,12 +100,13 @@ export const useGameStore = create<GameState>()(
           currentGameConfig: {
             white: whiteConfig,
             black: blackConfig
-          }
+          },
+          captured: newCaptured
         });
       },
 
       makeMove: (move) => {
-        const { chess } = get();
+        const { chess, captured } = get();
         try {
           const result = chess.move(move);
           if (result) {
@@ -86,12 +117,18 @@ export const useGameStore = create<GameState>()(
               winner = 'draw';
             }
 
+            const newCaptured = { ...captured };
+            if (result.captured) {
+              newCaptured[result.color].push(result.captured);
+            }
+
             set({
               fen: chess.fen(),
               pgn: chess.pgn(),
               turn: chess.turn(),
               isGameOver: chess.isGameOver(),
               winner,
+              captured: newCaptured
             });
           }
           return result;
@@ -114,6 +151,7 @@ export const useGameStore = create<GameState>()(
           winner: null,
           selectedSquare: null,
           matchId: null,
+          captured: { w: [], b: [] }
         });
       },
 

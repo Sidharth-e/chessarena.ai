@@ -12,6 +12,30 @@ import axios from "axios";
 import { updateMatchMove, finalizeMatch } from "@/app/actions/match";
 import { useMutation } from "@tanstack/react-query";
 
+const PIECE_SYMBOLS: Record<string, string> = {
+  p: '♟', n: '♞', b: '♝', r: '♜', q: '♛', k: '♚'
+};
+
+function CapturedPieces({ pieces, isWhiteCapture }: { pieces: string[], isWhiteCapture: boolean }) {
+  if (pieces.length === 0) return <div className="h-6" />;
+  
+  const order = ['q', 'r', 'b', 'n', 'p'];
+  const sortedPieces = [...pieces].sort((a, b) => order.indexOf(a) - order.indexOf(b));
+
+  return (
+    <div className="flex flex-wrap gap-0.5 mt-1 min-h-[24px]">
+      {sortedPieces.map((p, i) => (
+        <span 
+          key={i} 
+          className={`text-xl leading-none ${isWhiteCapture ? 'text-slate-950' : 'text-white'} drop-shadow-sm`}
+        >
+          {PIECE_SYMBOLS[p]}
+        </span>
+      ))}
+    </div>
+  );
+}
+
 export default function PlayPage() {
   const { 
     fen, 
@@ -21,6 +45,7 @@ export default function PlayPage() {
     winner, 
     matchId, 
     currentGameConfig,
+    captured,
     makeMove, 
     resetGame 
   } = useGameStore();
@@ -203,6 +228,7 @@ export default function PlayPage() {
                       <div className="flex flex-col">
                         <span className="text-white font-bold text-sm">WHITE</span>
                         <span className="text-slate-400 text-xs">{currentGameConfig.white.provider} {currentGameConfig.white.model && `(${currentGameConfig.white.model})`}</span>
+                        <CapturedPieces pieces={captured.w} isWhiteCapture={true} />
                       </div>
                       {turn === 'w' && !isGameOver && <Activity className="w-4 h-4 text-blue-400 ml-auto animate-pulse" />}
                     </div>
@@ -214,6 +240,7 @@ export default function PlayPage() {
                       <div className="flex flex-col">
                         <span className="text-white font-bold text-sm">BLACK</span>
                         <span className="text-slate-400 text-xs">{currentGameConfig.black.provider} {currentGameConfig.black.model && `(${currentGameConfig.black.model})`}</span>
+                        <CapturedPieces pieces={captured.b} isWhiteCapture={false} />
                       </div>
                       {turn === 'b' && !isGameOver && <Activity className="w-4 h-4 text-blue-400 ml-auto animate-pulse" />}
                     </div>
