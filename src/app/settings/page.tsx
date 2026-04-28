@@ -6,15 +6,16 @@ import { PlayerConfigCard } from '@/components/chess/PlayerConfigCard';
 import { Button } from '@/components/ui/Button';
 import { ArrowLeft, Save, Settings2 } from 'lucide-react';
 import Link from 'next/link';
+import { PlayerConfig } from '@/config/models';
 
 export default function SettingsPage() {
   const { globalSettings, setGlobalSettings } = useGameStore();
 
-  const handleUpdateWhite = (newConfig: any) => {
+  const handleUpdateWhite = (newConfig: PlayerConfig) => {
     setGlobalSettings({ ...globalSettings, white: newConfig });
   };
 
-  const handleUpdateBlack = (newConfig: any) => {
+  const handleUpdateBlack = (newConfig: PlayerConfig) => {
     setGlobalSettings({ ...globalSettings, black: newConfig });
   };
 
@@ -41,7 +42,7 @@ export default function SettingsPage() {
           <div className="space-y-2">
             <p className="text-slate-400">
               Configure the default AI providers and models for new matches. 
-              These settings are saved locally and used for "Quick Start".
+              These settings are saved locally and used for &quot;Quick Start&quot;.
             </p>
           </div>
 
@@ -74,7 +75,7 @@ export default function SettingsPage() {
           <div className="pt-6 border-t border-slate-700 flex justify-end">
             <Link href="/">
               <Button variant="primary" className="px-8">
-                <Save className="w-4 h-4" />
+                <SaveIcon className="w-4 h-4" />
                 Save & Exit
               </Button>
             </Link>
@@ -83,9 +84,10 @@ export default function SettingsPage() {
 
         {/* Info Card */}
         <div className="bg-blue-600/10 border border-blue-500/20 rounded-xl p-4 text-sm text-blue-400">
-          <strong>Pro Tip:</strong> You can still override these settings for individual matches using the "Manual Setup" option in the Play arena.
+          <strong>Pro Tip:</strong> You can still override these settings for individual matches using the &quot;Manual Setup&quot; option in the Play arena.
         </div>
       </div>
     </main>
   );
 }
+

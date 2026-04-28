@@ -51,9 +51,10 @@ export default function PlayPage() {
           } else if (res.data.error) {
             setLastThoughtProcess(`Error: ${res.data.error}`);
           }
-        } catch (error: any) {
+        } catch (error: unknown) {
           console.error(error);
-          setLastThoughtProcess(`Error fetching move: ${error.message}`);
+          const message = error instanceof Error ? error.message : "Unknown error";
+          setLastThoughtProcess(`Error fetching move: ${message}`);
         } finally {
           setIsThinking(false);
         }
@@ -64,7 +65,7 @@ export default function PlayPage() {
       }, 500);
       return () => clearTimeout(timer);
     }
-  }, [fen, turn, isGameOver, matchId, currentGameConfig, makeMove, isThinking]);
+  }, [fen, pgn, turn, isGameOver, matchId, currentGameConfig, makeMove, isThinking]);
 
   if (!matchId) {
     return (
