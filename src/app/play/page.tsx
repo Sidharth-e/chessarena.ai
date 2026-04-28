@@ -8,6 +8,7 @@ import { MatchSetup } from "@/components/chess/MatchSetup";
 import { Button } from "@/components/ui/Button";
 import Link from "next/link";
 import axios from "axios";
+import { updateMatchMove, finalizeMatch } from "@/app/actions/match";
 
 export default function PlayPage() {
   const { 
@@ -46,7 +47,16 @@ export default function PlayPage() {
           });
 
           if (res.data.move) {
-            makeMove(res.data.move);
+            const moveResult = makeMove(res.data.move);
+            if (moveResult && matchId) {
+              await updateMatchMove(
+                matchId, 
+                moveResult.after, // Use FEN after move
+                pgn + " " + res.data.move, 
+                res.data.move, 
+                res.data.thoughtProcess
+              );
+            }
             setLastThoughtProcess(res.data.thoughtProcess || `Played ${res.data.move}`);
           } else if (res.data.error) {
             setLastThoughtProcess(`Error: ${res.data.error}`);
@@ -66,6 +76,14 @@ export default function PlayPage() {
       return () => clearTimeout(timer);
     }
   }, [fen, pgn, turn, isGameOver, matchId, currentGameConfig, makeMove, isThinking]);
+
+  // Finalize Match
+  useEffect(() => {
+    if (isGameOver && matchId) {
+      const result = winner === 'w' ? '1-0' : winner === 'b' ? '0-1' : '1/2-1/2';
+      finalizeMatch(matchId, result);
+    }
+  }, [isGameOver, winner, matchId]);
 
   if (!matchId) {
     return (

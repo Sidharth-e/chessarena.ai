@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { Chess, Move } from 'chess.js';
 import { PlayerConfig, DEFAULT_CONFIG } from '../config/models';
+import axios from 'axios';
 
 interface GameState {
   chess: Chess;
@@ -25,6 +26,7 @@ interface GameState {
   resetGame: () => void;
   setMatchId: (id: string) => void;
   setGlobalSettings: (config: { white: PlayerConfig; black: PlayerConfig }) => void;
+  syncWithDb: () => Promise<void>;
   setCurrentGameConfig: (config: { white: PlayerConfig; black: PlayerConfig }) => void;
 }
 
@@ -108,7 +110,23 @@ export const useGameStore = create<GameState>()(
 
       setMatchId: (id) => set({ matchId: id }),
 
-      setGlobalSettings: (config) => set({ globalSettings: config }),
+      setGlobalSettings: (config) => {
+        set({ globalSettings: config });
+        // Background sync to DB
+        axios.post('/api/user-config', config).catch(err => console.error("Failed to sync settings to DB:", err));
+      },
+
+      syncWithDb: async () => {
+        try {
+          const res = await axios.get('/api/user-config');
+          if (res.data && !res.data.error) {
+            set({ globalSettings: { white: res.data.white, black: res.data.black } });
+          }
+        } catch (err) {
+          console.error("Failed to fetch settings from DB:", err);
+        }
+      },
+
       setCurrentGameConfig: (config) => set({ currentGameConfig: config }),
     }),
     {

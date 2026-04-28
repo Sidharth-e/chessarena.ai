@@ -9,7 +9,11 @@ import Link from 'next/link';
 import { PlayerConfig } from '@/config/models';
 
 export default function SettingsPage() {
-  const { globalSettings, setGlobalSettings } = useGameStore();
+  const { globalSettings, setGlobalSettings, syncWithDb } = useGameStore();
+
+  React.useEffect(() => {
+    syncWithDb();
+  }, [syncWithDb]);
 
   const handleUpdateWhite = (newConfig: PlayerConfig) => {
     setGlobalSettings({ ...globalSettings, white: newConfig });
@@ -75,7 +79,7 @@ export default function SettingsPage() {
           <div className="pt-6 border-t border-slate-700 flex justify-end">
             <Link href="/">
               <Button variant="primary" className="px-8">
-                <SaveIcon className="w-4 h-4" />
+                <Save className="w-4 h-4" />
                 Save & Exit
               </Button>
             </Link>
