@@ -23,7 +23,7 @@ function Board() {
   const { chess, turn, selectedSquare, setSelectedSquare, makeMove } = useGameStore();
   const [validMoves, setValidMoves] = useState<string[]>([]);
   
-  const board = useMemo(() => chess.board(), [chess, chess.fen()]);
+  const board = useMemo(() => chess.board(), [chess]);
 
   const handleSquareClick = (square: string) => {
     if (selectedSquare) {

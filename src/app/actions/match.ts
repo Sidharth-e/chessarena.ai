@@ -1,7 +1,7 @@
 "use server";
 
 import connectToDatabase from "@/lib/mongoose";
-import { Match, IMatch } from "@/models/Match";
+import { Match } from "@/models/Match";
 
 export async function createMatch(whiteProvider: string, blackProvider: string, whiteModel: string, blackModel: string) {
   try {
@@ -16,9 +16,10 @@ export async function createMatch(whiteProvider: string, blackProvider: string, 
     
     await newMatch.save();
     return { success: true, matchId: newMatch._id.toString() };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error creating match:", error);
-    return { success: false, error: error.message };
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return { success: false, error: message };
   }
 }
 
@@ -36,16 +37,20 @@ export async function getMatch(matchId: string) {
         _id: match._id.toString(),
         createdAt: match.createdAt?.toISOString(),
         updatedAt: match.updatedAt?.toISOString(),
-        moves: match.moves.map(m => ({
-          ...m,
-          _id: (m as any)._id?.toString(),
-          timestamp: m.timestamp?.toISOString()
-        }))
+        moves: match.moves.map(m => {
+          const move = m as { san: string; fen: string; timestamp: Date; thoughtProcess?: string; _id?: { toString: () => string } };
+          return {
+            ...move,
+            _id: move._id?.toString(),
+            timestamp: move.timestamp?.toISOString()
+          };
+        })
       }
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error fetching match:", error);
-    return { success: false, error: error.message };
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return { success: false, error: message };
   }
 }
 
@@ -67,9 +72,10 @@ export async function updateMatchMove(matchId: string, fen: string, pgn: string,
     
     await match.save();
     return { success: true };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error updating match:", error);
-    return { success: false, error: error.message };
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return { success: false, error: message };
   }
 }
 
@@ -81,8 +87,9 @@ export async function finalizeMatch(matchId: string, result: "1-0" | "0-1" | "1/
       result
     });
     return { success: true };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error finalizing match:", error);
-    return { success: false, error: error.message };
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return { success: false, error: message };
   }
 }

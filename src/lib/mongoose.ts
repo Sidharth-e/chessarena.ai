@@ -13,35 +13,44 @@ if (!MONGODB_URI) {
  * in development. This prevents connections growing exponentially
  * during API Route usage.
  */
-let cached = (global as any).mongoose;
+declare global {
+  var mongoose: {
+    conn: mongoose.Mongoose | null;
+    promise: Promise<mongoose.Mongoose> | null;
+  } | undefined;
+}
+
+let cached = global.mongoose;
 
 if (!cached) {
-  cached = (global as any).mongoose = { conn: null, promise: null };
+  cached = global.mongoose = { conn: null, promise: null };
 }
 
 async function connectToDatabase() {
-  if (cached.conn) {
-    return cached.conn;
+  const c = cached!;
+  
+  if (c.conn) {
+    return c.conn;
   }
 
-  if (!cached.promise) {
+  if (!c.promise) {
     const opts = {
       bufferCommands: false,
     };
 
-    cached.promise = mongoose.connect(MONGODB_URI as string, opts).then((mongoose) => {
+    c.promise = mongoose.connect(MONGODB_URI as string, opts).then((mongoose) => {
       return mongoose;
     });
   }
   
   try {
-    cached.conn = await cached.promise;
+    c.conn = await c.promise;
   } catch (e) {
-    cached.promise = null;
+    c.promise = null;
     throw e;
   }
 
-  return cached.conn;
+  return c.conn;
 }
 
 export default connectToDatabase;

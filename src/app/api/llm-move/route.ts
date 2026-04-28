@@ -116,10 +116,11 @@ Then, on the final line of your response, output ONLY the chosen move in SAN for
       thoughtProcess: content 
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("LLM Move Error:", error);
+    const message = error instanceof Error ? error.message : "Failed to generate move";
     return NextResponse.json(
-      { error: error.message || "Failed to generate move" },
+      { error: message },
       { status: 500 }
     );
   }
