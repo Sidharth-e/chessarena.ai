@@ -67,16 +67,26 @@ export default function PlayPage() {
     },
     onError: (error: unknown) => {
       console.error(error);
-      const err = error as { response?: { data?: { error?: string } }; message?: string };
+      const err = error as { response?: { data?: { error?: string; retryAfter?: string } }; message?: string };
       const message = err.response?.data?.error || err.message || "Unknown error";
-      setLastThoughtProcess(`Error fetching move: ${message}`);
+      const retryAfter = err.response?.data?.retryAfter;
+      
+      setLastThoughtProcess(`Error fetching move: ${message}${retryAfter ? ` (Retry in ${retryAfter})` : ""}`);
     },
     retry: (failureCount, error: unknown) => {
-      const err = error as { response?: { status?: number } };
-      if (err.response?.status === 429 && failureCount < 2) return true;
+      const err = error as { response?: { status?: number; data?: { retryAfter?: string } } };
+      // Retry more for 429 if we have a retryAfter hint, but still limit total attempts
+      if (err.response?.status === 429 && failureCount < 3) return true;
       return false;
     },
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000),
+    retryDelay: (attemptIndex, error: any) => {
+      const retryAfter = error.response?.data?.retryAfter;
+      if (retryAfter) {
+        const seconds = parseFloat(retryAfter.replace('s', ''));
+        if (!isNaN(seconds)) return (seconds + 1) * 1000;
+      }
+      return Math.min(1000 * 2 ** attemptIndex, 10000);
+    },
   });
 
   // AI Game Loop

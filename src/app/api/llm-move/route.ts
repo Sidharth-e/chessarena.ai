@@ -33,6 +33,7 @@ function getLLM(provider: string, model: string) {
         model: model,
         temperature: 0.1,
         apiKey: process.env.GOOGLE_API_KEY,
+        maxRetries: 2,
       });
     case "grok":
       return new ChatOpenAI({
@@ -116,16 +117,33 @@ Then, on the final line of your response, output ONLY the chosen move in SAN for
       thoughtProcess: content 
     });
 
-  } catch (error: unknown) {
+  } catch (error: any) {
     console.error("LLM Move Error:", error);
     
     // Handle rate limiting specifically
-    const err = error as { status?: number; response?: { status?: number }; message?: string };
-    if (err?.status === 429 || err?.response?.status === 429 || err?.message?.includes("429")) {
+    if (error?.status === 429 || error?.response?.status === 429 || error?.message?.includes("429")) {
+      let retryAfter = null;
+      let specificMessage = "Rate limit exceeded. Please wait a moment before trying again.";
+
+      // Try to extract specific retry delay from Google Generative AI error
+      if (error?.errorDetails) {
+        const quotaFailure = error.errorDetails.find((d: any) => d['@type']?.includes('QuotaFailure'));
+        const retryInfo = error.errorDetails.find((d: any) => d['@type']?.includes('RetryInfo'));
+        
+        if (retryInfo?.retryDelay) {
+          // Format like "29s" or "29.332s"
+          retryAfter = retryInfo.retryDelay;
+          specificMessage = `Rate limit exceeded. Gemini suggests retrying in ${retryAfter}.`;
+        } else if (quotaFailure) {
+          specificMessage = "Gemini quota exceeded. You may have reached your free tier limit for this model.";
+        }
+      }
+
       return NextResponse.json(
         { 
-          error: "Rate limit exceeded. Please wait a moment before trying again.",
-          details: err.message
+          error: specificMessage,
+          details: error.message,
+          retryAfter: retryAfter
         },
         { status: 429 }
       );
