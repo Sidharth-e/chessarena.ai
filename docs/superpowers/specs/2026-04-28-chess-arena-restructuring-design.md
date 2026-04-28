@@ -46,5 +46,10 @@ Update the store to handle persistence and match setup:
    - **Customize:** Shows two `PlayerConfigCard`s, then calls `initMatch(customSettings)`.
 5. **Gameplay:** Board renders and AI loop begins using `currentGameConfig`.
 
-## 7. Persistence
-- Use `localStorage` to persist `globalSettings` so they survive page reloads and act as the true "Default".
+## 7. Persistence (Hybrid Strategy)
+To ensure settings are both instant and durable, we will use a tiered approach:
+- **Zustand:** Primary runtime state for immediate UI responsiveness.
+- **`localStorage`:** Persist `globalSettings` on the client for instant hydration during page loads (middleware-based sync).
+- **MongoDB:** Store user preferences in a `UserConfig` collection for long-term durability and cross-device sync.
+  - A background sync process will ensure `localStorage` and MongoDB stay aligned.
+  - Match-specific configurations will be saved within the `Match` model in MongoDB.
