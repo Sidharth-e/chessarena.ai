@@ -3,6 +3,29 @@
 import connectToDatabase from "@/lib/mongoose";
 import { Match } from "@/models/Match";
 
+export async function getRecentMatches(limit: number = 10) {
+  try {
+    await connectToDatabase();
+    const matches = await Match.find()
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .lean();
+    
+    return {
+      success: true,
+      matches: matches.map(m => ({
+        ...m,
+        _id: m._id.toString(),
+        createdAt: (m.createdAt as Date)?.toISOString(),
+        updatedAt: (m.updatedAt as Date)?.toISOString(),
+      }))
+    };
+  } catch (error: unknown) {
+    console.error("Error fetching recent matches:", error);
+    return { success: false, error: "Failed to fetch matches" };
+  }
+}
+
 export async function createMatch(whiteProvider: string, blackProvider: string, whiteModel: string, blackModel: string) {
   try {
     await connectToDatabase();

@@ -6,13 +6,15 @@ import { PlayerConfigCard } from './PlayerConfigCard';
 import { Button } from '@/components/ui/Button';
 import { createMatch } from '@/app/actions/match';
 import { PlayerConfig } from '@/config/models';
-import { Rocket, Settings2, Play } from 'lucide-react';
+import { Rocket, Settings2, Play, History } from 'lucide-react';
+import { MatchHistoryModal } from './MatchHistoryModal';
 
 export const MatchSetup: React.FC = () => {
   const { globalSettings, initGame } = useGameStore();
   const [setupMode, setSetupMode] = useState<'selection' | 'manual'>('selection');
   const [localConfig, setLocalConfig] = useState<{ white: PlayerConfig; black: PlayerConfig }>(globalSettings);
   const [isStarting, setIsStarting] = useState(false);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 
   const handleStartMatch = async (config: { white: PlayerConfig; black: PlayerConfig }) => {
     setIsStarting(true);
@@ -44,7 +46,7 @@ export const MatchSetup: React.FC = () => {
         <h2 className="text-3xl font-black text-white mb-2 italic tracking-tighter">PREPARE FOR BATTLE</h2>
         <p className="text-slate-400 mb-8 text-center">Select your match configuration to begin the arena.</p>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full mb-6">
           <button
             onClick={() => handleStartMatch(globalSettings)}
             disabled={isStarting}
@@ -65,6 +67,16 @@ export const MatchSetup: React.FC = () => {
             <p className="text-sm text-slate-400 text-center">Customize players and models for this match.</p>
           </button>
         </div>
+
+        <button
+          onClick={() => setIsHistoryOpen(true)}
+          className="flex items-center gap-2 text-slate-500 hover:text-blue-400 transition-colors text-sm font-bold uppercase tracking-widest"
+        >
+          <History className="w-4 h-4" />
+          View Match History
+        </button>
+
+        <MatchHistoryModal isOpen={isHistoryOpen} onClose={() => setIsHistoryOpen(false)} />
       </div>
     );
   }

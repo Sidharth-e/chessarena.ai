@@ -20,7 +20,7 @@ interface GameState {
   currentGameConfig: { white: PlayerConfig; black: PlayerConfig };
   
   // Actions
-  initGame: (matchId: string, whiteConfig: PlayerConfig, blackConfig: PlayerConfig) => void;
+  initGame: (matchId: string, whiteConfig: PlayerConfig, blackConfig: PlayerConfig, initialFen?: string, initialPgn?: string) => void;
   makeMove: (move: string | { from: string; to: string; promotion?: string }) => Move | null;
   setSelectedSquare: (square: string | null) => void;
   resetGame: () => void;
@@ -46,14 +46,22 @@ export const useGameStore = create<GameState>()(
       globalSettings: DEFAULT_CONFIG,
       currentGameConfig: DEFAULT_CONFIG,
 
-      initGame: (matchId, whiteConfig, blackConfig) => {
-        const newChess = new Chess();
+      initGame: (matchId, whiteConfig, blackConfig, initialFen, initialPgn) => {
+        const newChess = new Chess(initialFen);
+        if (initialPgn) {
+          try {
+            newChess.loadPgn(initialPgn);
+          } catch (e) {
+            console.error("Failed to load PGN:", e);
+          }
+        }
+
         set({
           chess: newChess,
           fen: newChess.fen(),
           pgn: newChess.pgn(),
           turn: newChess.turn(),
-          isGameOver: false,
+          isGameOver: newChess.isGameOver(),
           winner: null,
           matchId,
           whiteProvider: whiteConfig.provider,
@@ -100,11 +108,12 @@ export const useGameStore = create<GameState>()(
         set({
           chess: newChess,
           fen: newChess.fen(),
-          pgn: newChess.pgn(),
+          pgn: '',
           turn: 'w',
           isGameOver: false,
           winner: null,
           selectedSquare: null,
+          matchId: null,
         });
       },
 
